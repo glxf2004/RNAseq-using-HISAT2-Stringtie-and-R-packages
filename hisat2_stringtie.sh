@@ -45,4 +45,4 @@ stringtie -e -B -p 4 -G stringtie_merged.gtf -o ballgown/SiC/SiC.gtf SiC.bam
 stringtie -e -B -p 4 -G stringtie_merged.gtf -o ballgown/SiM/SiM.gtf SiM.bam
 
 
-date
+date 2020-06-08
