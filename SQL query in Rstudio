@@ -1,0 +1,53 @@
+library(sqldf)
+
+MTPAP_results_2020_gene_results_summary_select_1 <- sqldf('SELECT V1, V2, V6, V7, V8, V9, V19 from MTPAP_results_2020_gene_results_summary')
+
+
+colnames(MTPAP_results_2020_gene_results_summary_select_1)[1] <- "gene_id"
+colnames(MTPAP_results_2020_gene_results_summary_select_1)[2] <- "gene_name"
+colnames(MTPAP_results_2020_gene_results_summary_select_1)[3] <- "mean_tpm_CTL"
+colnames(MTPAP_results_2020_gene_results_summary_select_1)[4] <- "mean_tpm_KD"
+colnames(MTPAP_results_2020_gene_results_summary_select_1)[5] <- "sd_tpm_CTL"
+colnames(MTPAP_results_2020_gene_results_summary_select_1)[6] <- "sd_tpm_KD"
+colnames(MTPAP_results_2020_gene_results_summary_select_1)[7] <- "pvalue"
+
+#dont do this: sqldf wont work: MTPAP_Jeremy <- MTPAP_results_2020_gene_results_summary_select_1[-1,]
+MTPAP_Jeremy_not_null <- sqldf('SELECT * FROM MTPAP_results_2020_gene_results_summary_select_1 WHERE pvalue > 0' )
+
+MTPAP_Jeremy_p_significant <- sqldf('SELECT * FROM MTPAP_Jeremy_not_null WHERE pvalue < 0.05' )
+
+MTPAP_Jeremy_p_significant_kd_more <- sqldf('select * from MTPAP_Jeremy_p_significant where mean_tpm_CTL <= mean_tpm_KD')
+
+MTPAP_Jeremy_p_significant_kd_less <- sqldf('select * from MTPAP_Jeremy_p_significant where mean_tpm_CTL > mean_tpm_KD')
+
+
+
+Xiangfei_RMA_expression_with_TTest_selected <- sqldf('SELECT V3, V25, V26, V27 from Xiangfei_RMA_expression_with_TTest')
+
+colnames(Xiangfei_RMA_expression_with_TTest_selected)[1] <- "gene_name_microarray"
+colnames(Xiangfei_RMA_expression_with_TTest_selected)[2] <- "mean_microarray_CTL"
+colnames(Xiangfei_RMA_expression_with_TTest_selected)[3] <- "mean_microarray_KD"
+colnames(Xiangfei_RMA_expression_with_TTest_selected)[4] <- "pvalue_microarray"
+
+
+
+
+MTPAP_Cecelia_p_significant <- sqldf('select * from Xiangfei_RMA_expression_with_TTest_selected where pvalue_microarray < 0.05')
+MTPAP_Cecelia_p_significant_kd_more<- sqldf('select * from MTPAP_Cecelia_p_significant where mean_microarray_KD > mean_microarray_CTL')
+
+MTPAP_Join <- sqldf('select * from MTPAP_Cecelia_p_significant join MTPAP_Jeremy_p_significant on (gene_name_microarray = gene_name)')
+
+MTPAP_Join_kd_more <- sqldf('select * from MTPAP_Cecelia_p_significant_kd_more join MTPAP_Jeremy_p_significant_kd_more on (gene_name_microarray = gene_name)')
+
+MTPAP_clean_for_jeremy <- sqldf('select * from MTPAP_Join_kd_more 
+                               where mean_tpm_CTL < mean_tpm_KD order by pvalue')
+
+MTPAP_clean_for_jeremy_group <- sqldf('select * from MTPAP_clean_for_jeremy 
+                                      group by gene_id')
+write.csv(MTPAP_clean_for_jeremy, "MTPAP_microarray_&_RNAseq.csv")
+
+write.csv(MTPAP_Join_kd_more, "MTPAP_Join_kd_more.csv")
+
+#plot of MTPAP_Jeremy_p_significant
+plot(x=MTPAP_Jeremy_p_significant$mean_tpm_CTL, y=MTPAP_Jeremy_p_significant$mean_tpm_KD)
+     xlab="Control", ylab="Knockdown", pch =16, cex=1.3, col = "red", xlim =c(0,5000), ylim=c(0,5000))
